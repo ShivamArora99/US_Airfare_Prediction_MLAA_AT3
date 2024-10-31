@@ -45,3 +45,22 @@ def pre_procedss_airport_data(df):
 
 # Usage
 # Airport_df_pre_processed = pre_procedss_airport_data(Airport_df_cleaned)
+
+
+def calculate_average_distances(airport_df):
+    """
+    Calculates the average distance between unique origin and destination airports.
+
+    Args:
+        airport_df: A pandas DataFrame with 'Origin', 'Destination', and 'Distance' columns.
+
+    Returns:
+        A pandas DataFrame with unique origin and destination airports and their average distance.
+    """
+    average_distances = airport_df.groupby(['startingAirport', 'destinationAirport'])['totalTravelDistance'].mean().reset_index()
+    
+    return average_distances
+
+# Usage for the calculate_average_distances
+# average_distances_df = calculate_average_distances(airport_df)
+# print(average_distances_df)
