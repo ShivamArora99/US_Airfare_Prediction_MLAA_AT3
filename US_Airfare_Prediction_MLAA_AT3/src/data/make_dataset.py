@@ -19,6 +19,17 @@ def extract_departure_time(time_obj):
     except (ValueError, TypeError, IndexError):
         return 'Unknown'
 
+def impute_distance_by_average(df):
+  # Calculate average distances for each route
+  average_distances = df.groupby(['startingAirport', 'destinationAirport'])['totalTravelDistance'].mean().reset_index()
+  # Merge average distances back into the original DataFrame
+  df = pd.merge(df, average_distances, on=['startingAirport', 'destinationAirport'], how='left', suffixes=('', '_avg'))
+  # Fill missing values with the calculated averages
+  df['totalTravelDistance'] = df['totalTravelDistance'].fillna(df['totalTravelDistance_avg'])
+  # Drop the temporary average distance column
+  df = df.drop(columns=['totalTravelDistance_avg'])
+  return df
+
 
 def clean_cabin_type(cabin_type_str):
     """
@@ -104,6 +115,7 @@ def clean_data(df):
     cleaned_df['Cabin_Score'] = [cabin[1] for cabin in cabin_info]
 
     cleaned_df['totalFare'] = df['totalFare']  # Extract the cabin score
+    cleaned_df = impute_distance_by_average(df)
 
     return cleaned_df
 
