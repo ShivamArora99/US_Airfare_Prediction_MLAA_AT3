@@ -115,7 +115,8 @@ def clean_data(df):
     cleaned_df['Cabin_Score'] = [cabin[1] for cabin in cabin_info]
 
     cleaned_df['totalFare'] = df['totalFare']  # Extract the cabin score
-    cleaned_df = impute_distance_by_average(df)
+    cleaned_df['totalTravelDistance'] = df['totalTravelDistance']
+    cleaned_df = impute_distance_by_average(cleaned_df)
 
     return cleaned_df
 
