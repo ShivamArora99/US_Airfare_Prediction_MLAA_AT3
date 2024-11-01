@@ -253,7 +253,7 @@ def tune_pipeline(pipeline, param_grid, X_train, y_train,
         
         # Save the CV results
         cv_results = pd.DataFrame(search.cv_results_)
-        results_filename = f'models/cv_results_{search_type}_{timestamp}.csv'
+        results_filename = f'../models/cv_results_{search_type}_{timestamp}.csv'
         cv_results.to_csv(results_filename, index=False)
         print(f"CV results saved as: {results_filename}")
         
