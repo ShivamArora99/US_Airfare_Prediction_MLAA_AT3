@@ -1,5 +1,7 @@
 from statistics import mode
 import pandas as pd
+from statistics import mode
+
 
 def extract_departure_time(time_obj):
     """Categorizes a time string into more specific time periods."""
@@ -19,16 +21,8 @@ def extract_departure_time(time_obj):
     except (ValueError, TypeError, IndexError):
         return 'Unknown'
 
-def impute_distance_by_average(df):
-  # Calculate average distances for each route
-  average_distances = df.groupby(['startingAirport', 'destinationAirport'])['totalTravelDistance'].mean().reset_index()
-  # Merge average distances back into the original DataFrame
-  df = pd.merge(df, average_distances, on=['startingAirport', 'destinationAirport'], how='left', suffixes=('', '_avg'))
-  # Fill missing values with the calculated averages
-  df['totalTravelDistance'] = df['totalTravelDistance'].fillna(df['totalTravelDistance_avg'])
-  # Drop the temporary average distance column
-  df = df.drop(columns=['totalTravelDistance_avg'])
-  return df
+
+from statistics import mode
 
 
 def clean_cabin_type(cabin_type_str):
@@ -37,23 +31,37 @@ def clean_cabin_type(cabin_type_str):
     """
     if cabin_type_str:
         cabin_types = cabin_type_str.lower().split('|')
+
+        total_score = 0
+        for cabin in cabin_types:
+            if cabin == 'coach':
+                total_score += 1
+            elif cabin == 'premium coach':
+                total_score += 2
+            elif cabin == 'business':
+                total_score += 3
+            elif cabin == 'first':
+                total_score += 4
+
         mode_cabin = mode(cabin_types)
 
-        # Cabin type scoring (example - adjust scores as needed)
-        if mode_cabin == 'economy':
-            cabin_score = 1
-        elif mode_cabin == 'premium economy':
-            cabin_score = 2
-        elif mode_cabin == 'business':
-            cabin_score = 3
-        elif mode_cabin == 'first':
-            cabin_score = 4
-        else:
-            cabin_score = 0  # Default score for unknown types
-
-        return mode_cabin, cabin_score  # Return both mode and score
+        return mode_cabin, total_score  # Return both mode and total score
     else:
-        return 'Unknown', 0
+        return 'Unknown', 0  # Return 'Unknown' and 0 if cabin_type_str is empty
+
+
+def impute_distance_by_average(df):
+    # Calculate average distances for each route
+    average_distances = df.groupby(['startingAirport', 'destinationAirport'])[
+        'totalTravelDistance'].mean().reset_index()
+    # Merge average distances back into the original DataFrame
+    df = pd.merge(df, average_distances, on=['startingAirport', 'destinationAirport'], how='left',
+                  suffixes=('', '_avg'))
+    # Fill missing values with the calculated averages
+    df['totalTravelDistance'] = df['totalTravelDistance'].fillna(df['totalTravelDistance_avg'])
+    # Drop the temporary average distance column
+    df = df.drop(columns=['totalTravelDistance_avg'])
+    return df
 
 
 def clean_data(df):
@@ -92,7 +100,7 @@ def clean_data(df):
         .str.upper()
         .str.replace('[^A-Z]', '', regex=True)
     )
-    cleaned_df['startingAirport'] = cleaned_df['startingAirport'].astype(str).str.split('|').apply(lambda x: x[0])
+    # cleaned_df['startingAirport'] = cleaned_df['startingAirport'].astype(str).str.split('|').apply(lambda x: x[0])
 
     cleaned_df['destinationAirport'] = (
         df['destinationAirport']
@@ -100,7 +108,7 @@ def clean_data(df):
         .str.upper()
         .str.replace('[^A-Z]', '', regex=True)
     )
-    cleaned_df['destinationAirport'] = cleaned_df['destinationAirport'].astype(str).str.split('|').apply(lambda x: x[0])
+    # cleaned_df['destinationAirport'] = cleaned_df['destinationAirport'].astype(str).str.split('|').apply(lambda x: x[0])
 
     cleaned_df['Departure_Year'] = pd.to_datetime(df['flightDate']).dt.year
     cleaned_df['Departure_Month'] = pd.to_datetime(df['flightDate']).dt.month
@@ -114,11 +122,10 @@ def clean_data(df):
     cleaned_df['Cabin_Type'] = [cabin[0] for cabin in cabin_info]  # Extract the cabin type (mode)
     cleaned_df['Cabin_Score'] = [cabin[1] for cabin in cabin_info]
 
-    cleaned_df['totalFare'] = df['totalFare']  # Extract the cabin score
+    cleaned_df['totalFare'] = df['totalFare']
     cleaned_df['totalTravelDistance'] = df['totalTravelDistance']
+
     cleaned_df = impute_distance_by_average(cleaned_df)
 
     return cleaned_df
 
-# Usage
-# Airport_df_cleaned = clean_data(airport_df)
