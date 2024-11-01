@@ -1,16 +1,12 @@
-import numpy as np
-import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import FunctionTransformer, LabelEncoder, OneHotEncoder
 from sklearn.base import BaseEstimator, TransformerMixin
+import pandas as pd
+import numpy as np
 from scipy.stats import mstats
-import pickle
 import joblib
-from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
-from datetime import datetime
 import os
-
 
 class CyclicalEncoder(BaseEstimator, TransformerMixin):
     """Transform temporal features into cyclical features using sine and cosine"""
@@ -123,105 +119,3 @@ def train_model(model, X_train, y_train, model_name='flight_price_model', output
     print(f"\nPipeline saved as: {save_path}")
     
     return pipeline
-
-def tune_pipeline(pipeline, param_grid, X_train, y_train, 
-                 search_type='random',
-                 n_iter=100,
-                 cv=5,
-                 scoring='neg_root_mean_squared_error',
-                 n_jobs=-1,
-                 verbose=2):
-    """
-    Tune pipeline hyperparameters and save the best pipeline.
-    
-    Parameters:
-    -----------
-    pipeline : sklearn Pipeline
-        The pipeline to tune
-    param_grid : dict
-        Dictionary with parameter names as keys. Parameter names should be in format:
-        'step_name__parameter_name'
-    X_train : array-like
-        Training features
-    y_train : array-like
-        Training target
-    search_type : str, default='random'
-        Type of search ('random' or 'grid')
-    n_iter : int, default=100
-        Number of iterations for RandomizedSearchCV
-    cv : int, default=5
-        Number of cross-validation folds
-    scoring : str, default='neg_root_mean_squared_error'
-        Scoring metric to use
-    n_jobs : int, default=-1
-        Number of parallel jobs
-    verbose : int, default=2
-        Verbosity level
-        
-    Returns:
-    --------
-    dict
-        Dictionary containing best pipeline, best parameters, and cv results
-    """
-    try:
-        # Create the appropriate search CV
-        if search_type.lower() == 'random':
-            search = RandomizedSearchCV(
-                estimator=pipeline,
-                param_distributions=param_grid,
-                n_iter=n_iter,
-                cv=cv,
-                scoring=scoring,
-                n_jobs=n_jobs,
-                verbose=verbose,
-                random_state=42
-            )
-        else:  # grid search
-            search = GridSearchCV(
-                estimator=pipeline,
-                param_grid=param_grid,
-                cv=cv,
-                scoring=scoring,
-                n_jobs=n_jobs,
-                verbose=verbose
-            )
-        
-        # Perform the search
-        print(f"\nStarting {search_type} search CV...")
-        search.fit(X_train, y_train)
-        
-        # Print best parameters and score
-        print("\nBest Parameters:")
-        print("----------------")
-        for param, value in search.best_params_.items():
-            print(f"{param}: {value}")
-            
-        print("\nBest Score:")
-        print("-----------")
-        print(f"CV Score: {abs(search.best_score_):.4f}")  # Taking abs as scoring might be negative
-        
-        # Create models directory if it doesn't exist
-        # os.makedirs('models', exist_ok=True)
-        
-        # Save the best pipeline
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        model_filename = f'../models/best_pipeline_{search_type}_{timestamp}.joblib'
-        joblib.dump(search.best_estimator_, model_filename)
-        print(f"\nBest pipeline saved as: {model_filename}")
-        
-        # Save the CV results
-        cv_results = pd.DataFrame(search.cv_results_)
-        results_filename = f'../models/cv_results_{search_type}_{timestamp}.csv'
-        cv_results.to_csv(results_filename, index=False)
-        print(f"CV results saved as: {results_filename}")
-        
-        return {
-            'best_pipeline': search.best_estimator_,
-            'best_params': search.best_params_,
-            'best_score': search.best_score_,
-            'cv_results': cv_results
-        }
-        
-    except Exception as e:
-        print(f"Error during pipeline tuning: {str(e)}")
-        raise
